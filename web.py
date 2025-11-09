@@ -15,6 +15,6 @@ if __name__ == "__main__":
         view=ft.AppView.WEB_BROWSER, 
         port=port, 
         host="0.0.0.0",
-        web_renderer=ft.WebRenderer.HTML,  # Better mobile support
+        web_renderer=ft.WebRenderer.CANVAS_KIT,  # More stable for web deployment
     )
 
