@@ -28,6 +28,65 @@ def safe_update(*controls: ft.Control | None) -> None:
             control.update()
 
 
+async def get_user_id(page: ft.Page) -> str:
+    """Get user ID from storage."""
+    try:
+        user_id = await page.client_storage.get_async("user_id") or ""
+        return str(user_id) if user_id else ""
+    except Exception:
+        return ""
+
+
+async def set_user_id(page: ft.Page, user_id: str) -> None:
+    """Save user ID to storage."""
+    try:
+        await page.client_storage.set_async("user_id", user_id)
+    except Exception:
+        pass
+
+
+async def load_progress(page: ft.Page, key: str) -> tuple[int, int]:
+    """Load saved progress from client storage and cloud."""
+    user_id = await get_user_id(page)
+    
+    # Try cloud first if user_id is set
+    if user_id:
+        try:
+            from progress_api import load_progress_cloud
+            cloud_score, cloud_total = await load_progress_cloud(user_id, key)
+            if cloud_total > 0:
+                return cloud_score, cloud_total
+        except Exception:
+            pass
+    
+    # Fall back to local storage
+    try:
+        score = await page.client_storage.get_async(f"{key}_score") or 0
+        total = await page.client_storage.get_async(f"{key}_total") or 0
+        return int(score), int(total)
+    except Exception:
+        return 0, 0
+
+
+async def save_progress(page: ft.Page, key: str, score: int, total: int) -> None:
+    """Save progress to client storage and cloud."""
+    # Save locally first
+    try:
+        await page.client_storage.set_async(f"{key}_score", score)
+        await page.client_storage.set_async(f"{key}_total", total)
+    except Exception:
+        pass
+    
+    # Also save to cloud if user_id is set
+    user_id = await get_user_id(page)
+    if user_id:
+        try:
+            from progress_api import save_progress_cloud
+            await save_progress_cloud(user_id, key, score, total)
+        except Exception:
+            pass  # Silently fail if cloud unavailable
+
+
 class ReferenceView:
     def __init__(self, page: ft.Page) -> None:
         self.page = page
@@ -120,10 +179,14 @@ class ArticleExerciseView:
         self.page = page
         self.questions = ARTICLE_QUESTIONS
         self.options = ARTICLE_OPTIONS
+        self.storage_key = "article_exercise"
 
         self.current: dict[str, str] | None = None
         self.score = 0
         self.total = 0
+        
+        # Load saved progress
+        page.run_task(self._load_progress)
 
         self.prompt_text = ft.Text("", size=18, weight=ft.FontWeight.BOLD)
         self.option_group = ft.RadioGroup(
@@ -140,6 +203,7 @@ class ArticleExerciseView:
             [
                 ft.ElevatedButton("Check answer", icon="check_circle", on_click=self._on_check_answer),
                 ft.OutlinedButton("New question", icon="refresh", on_click=self._on_new_question),
+                ft.OutlinedButton("Reset progress", icon="restart_alt", on_click=self._on_reset_progress),
             ],
             spacing=12,
         )
@@ -206,6 +270,27 @@ class ArticleExerciseView:
         safe_update(self.feedback_text, self.explanation_text)
 
         self._update_score_text()
+        # Save progress
+        self.page.run_task(self._save_progress)
+
+    async def _load_progress(self) -> None:
+        """Load saved progress from storage."""
+        score, total = await load_progress(self.page, self.storage_key)
+        self.score = score
+        self.total = total
+        self._update_score_text()
+
+    async def _save_progress(self) -> None:
+        """Save current progress to storage."""
+        await save_progress(self.page, self.storage_key, self.score, self.total)
+
+    def _on_reset_progress(self, _: ft.ControlEvent) -> None:
+        """Reset progress to zero."""
+        self.score = 0
+        self.total = 0
+        self._update_score_text()
+        self.page.run_task(self._save_progress)
+        self._show_snack_bar("Progress reset!")
 
     def _update_score_text(self) -> None:
         if self.total == 0:
@@ -226,10 +311,14 @@ class VerbExerciseView:
         self.page = page
         self.questions = VERB_QUESTIONS
         self.options = VERB_OPTIONS
+        self.storage_key = "verb_exercise"
 
         self.current: dict[str, str] | None = None
         self.score = 0
         self.total = 0
+        
+        # Load saved progress
+        page.run_task(self._load_progress)
 
         self.prompt_text = ft.Text("", size=18, weight=ft.FontWeight.BOLD)
         self.option_group = ft.RadioGroup(
@@ -246,6 +335,7 @@ class VerbExerciseView:
             [
                 ft.ElevatedButton("Check answer", icon="check_circle", on_click=self._on_check_answer),
                 ft.OutlinedButton("New question", icon="refresh", on_click=self._on_new_question),
+                ft.OutlinedButton("Reset progress", icon="restart_alt", on_click=self._on_reset_progress),
             ],
             spacing=12,
         )
@@ -315,6 +405,27 @@ class VerbExerciseView:
         safe_update(self.feedback_text, self.explanation_text)
 
         self._update_score_text()
+        # Save progress
+        self.page.run_task(self._save_progress)
+
+    async def _load_progress(self) -> None:
+        """Load saved progress from storage."""
+        score, total = await load_progress(self.page, self.storage_key)
+        self.score = score
+        self.total = total
+        self._update_score_text()
+
+    async def _save_progress(self) -> None:
+        """Save current progress to storage."""
+        await save_progress(self.page, self.storage_key, self.score, self.total)
+
+    def _on_reset_progress(self, _: ft.ControlEvent) -> None:
+        """Reset progress to zero."""
+        self.score = 0
+        self.total = 0
+        self._update_score_text()
+        self.page.run_task(self._save_progress)
+        self._show_snack_bar("Progress reset!")
 
     def _update_score_text(self) -> None:
         if self.total == 0:
@@ -334,10 +445,14 @@ class PrepositionExerciseView:
     def __init__(self, page: ft.Page) -> None:
         self.page = page
         self.questions = PREPOSITION_QUESTIONS
+        self.storage_key = "preposition_exercise"
 
         self.current: dict[str, str] | None = None
         self.score = 0
         self.total = 0
+        
+        # Load saved progress
+        page.run_task(self._load_progress)
 
         self.prompt_text = ft.Text("", size=18, weight=ft.FontWeight.BOLD)
         self.options_column = ft.Column(spacing=8)
@@ -350,6 +465,7 @@ class PrepositionExerciseView:
             [
                 ft.ElevatedButton("Check answer", icon="check_circle", on_click=self._on_check_answer),
                 ft.OutlinedButton("New question", icon="refresh", on_click=self._on_new_question),
+                ft.OutlinedButton("Reset progress", icon="restart_alt", on_click=self._on_reset_progress),
             ],
             spacing=12,
         )
@@ -426,6 +542,27 @@ class PrepositionExerciseView:
         safe_update(self.feedback_text, self.explanation_text)
 
         self._update_score_text()
+        # Save progress
+        self.page.run_task(self._save_progress)
+
+    async def _load_progress(self) -> None:
+        """Load saved progress from storage."""
+        score, total = await load_progress(self.page, self.storage_key)
+        self.score = score
+        self.total = total
+        self._update_score_text()
+
+    async def _save_progress(self) -> None:
+        """Save current progress to storage."""
+        await save_progress(self.page, self.storage_key, self.score, self.total)
+
+    def _on_reset_progress(self, _: ft.ControlEvent) -> None:
+        """Reset progress to zero."""
+        self.score = 0
+        self.total = 0
+        self._update_score_text()
+        self.page.run_task(self._save_progress)
+        self._show_snack_bar("Progress reset!")
 
     def _update_score_text(self) -> None:
         if self.total == 0:
@@ -619,6 +756,52 @@ def main(page: ft.Page) -> None:
             pass
 
     theme_switch = ft.Switch(label="Dark mode", value=True)
+    user_id_field = ft.TextField(
+        label="User ID (for cross-device sync)",
+        hint_text="Enter a unique ID to sync progress across devices",
+        width=250,
+        on_submit=lambda e: page.run_task(save_user_id, e.control.value),
+    )
+    sync_status = ft.Text("", size=10, color=ft.Colors.ON_SURFACE_VARIANT)
+
+    async def save_user_id(user_id: str) -> None:
+        """Save user ID and reload progress."""
+        await set_user_id(page, user_id)
+        user_id_field.value = user_id
+        safe_update(user_id_field)
+        
+        # Reload progress from cloud
+        page.run_task(article_view._load_progress)
+        page.run_task(verb_view._load_progress)
+        page.run_task(preposition_view._load_progress)
+        
+        sync_status.value = f"Synced as: {user_id}" if user_id else "Local mode"
+        sync_status.color = ft.Colors.GREEN_400 if user_id else ft.Colors.ON_SURFACE_VARIANT
+        safe_update(sync_status)
+        page.snack_bar = ft.SnackBar(ft.Text(f"User ID saved! Progress will sync across devices." if user_id else "Using local storage only."))
+        page.snack_bar.open = True
+        page.update()
+
+    def on_user_id_submit(e: ft.ControlEvent) -> None:
+        user_id = user_id_field.value.strip()
+        page.run_task(save_user_id, user_id)
+
+    user_id_field.on_submit = lambda e: on_user_id_submit(e)
+    save_user_id_btn = ft.ElevatedButton("Save ID", icon="cloud_sync", on_click=lambda _: on_user_id_submit(_))
+
+    async def load_user_id() -> None:
+        """Load saved user ID."""
+        user_id = await get_user_id(page)
+        user_id_field.value = user_id
+        if user_id:
+            sync_status.value = f"Synced as: {user_id}"
+            sync_status.color = ft.Colors.GREEN_400
+        else:
+            sync_status.value = "Local mode (enter ID to sync)"
+            sync_status.color = ft.Colors.ON_SURFACE_VARIANT
+        safe_update(user_id_field, sync_status)
+
+    page.run_task(load_user_id)
 
     def toggle_theme(e: ft.ControlEvent) -> None:
         page.theme_mode = ft.ThemeMode.DARK if e.control.value else ft.ThemeMode.LIGHT
@@ -626,10 +809,39 @@ def main(page: ft.Page) -> None:
 
     theme_switch.on_change = toggle_theme
 
+    settings_dialog = ft.AlertDialog(
+        title=ft.Text("Sync Settings"),
+        content=ft.Column(
+            [
+                ft.Text("Enter a User ID to sync your progress across devices:", size=12),
+                user_id_field,
+                sync_status,
+                ft.Row([save_user_id_btn], spacing=8),
+            ],
+            spacing=12,
+            tight=True,
+            width=400,
+        ),
+        actions=[
+            ft.TextButton("Close", on_click=lambda _: (setattr(settings_dialog, "open", False), page.update())),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+
+    def open_settings(_: ft.ControlEvent) -> None:
+        settings_dialog.open = True
+        page.dialog = settings_dialog
+        page.update()
+
+    settings_btn = ft.IconButton(icon="settings", on_click=open_settings)
+
     page.appbar = ft.AppBar(
         title=ft.Text("Italian Learning Toolkit"),
         center_title=False,
-        actions=[ft.Container(theme_switch, padding=ft.padding.only(right=16))],
+        actions=[
+            ft.Container(settings_btn, padding=ft.padding.only(right=8)),
+            ft.Container(theme_switch, padding=ft.padding.only(right=16)),
+        ],
     )
 
     reference_view = ReferenceView(page)
