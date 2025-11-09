@@ -608,13 +608,15 @@ def main(page: ft.Page) -> None:
     page.theme_mode = ft.ThemeMode.DARK
     page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
     
-    # Only set window size on desktop platforms
-    if page.platform in [ft.Platform.WINDOWS, ft.Platform.MACOS, ft.Platform.LINUX]:
-        page.window_width = 1200
-        page.window_height = 800
-    else:
-        # Mobile: use full screen
-        page.window_full_screen = False
+    # Only set window size for desktop apps (not web)
+    import os
+    if os.getenv("FLET_WEB_MODE", "").lower() != "true":
+        try:
+            page.window_width = 1200
+            page.window_height = 800
+        except AttributeError:
+            # Window properties not available (web mode)
+            pass
 
     theme_switch = ft.Switch(label="Dark mode", value=True)
 
