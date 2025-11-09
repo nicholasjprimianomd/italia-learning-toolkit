@@ -207,7 +207,8 @@ class ArticleExerciseView:
                 ft.OutlinedButton("New question", icon="refresh", on_click=self._on_new_question),
                 ft.OutlinedButton("Reset progress", icon="restart_alt", on_click=self._on_reset_progress),
             ],
-            spacing=12,
+            spacing=8,
+            wrap=True,
         )
 
         self.view = ft.Column(
@@ -339,7 +340,8 @@ class VerbExerciseView:
                 ft.OutlinedButton("New question", icon="refresh", on_click=self._on_new_question),
                 ft.OutlinedButton("Reset progress", icon="restart_alt", on_click=self._on_reset_progress),
             ],
-            spacing=12,
+            spacing=8,
+            wrap=True,
         )
 
         self.view = ft.Column(
@@ -469,7 +471,8 @@ class PrepositionExerciseView:
                 ft.OutlinedButton("New question", icon="refresh", on_click=self._on_new_question),
                 ft.OutlinedButton("Reset progress", icon="restart_alt", on_click=self._on_reset_progress),
             ],
-            spacing=12,
+            spacing=8,
+            wrap=True,
         )
 
         self.view = ft.Column(
@@ -603,12 +606,12 @@ class ChatView:
             width=220,
         )
         self.status_text = ft.Text("", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
-        self.messages_view = ft.ListView(expand=True, spacing=10, auto_scroll=True, height=420)
+        self.messages_view = ft.ListView(spacing=10, auto_scroll=True, height=300)
         self.input_field = ft.TextField(
             label="Ask a question or describe what you are practising...",
             multiline=True,
-            min_lines=3,
-            max_lines=5,
+            min_lines=2,
+            max_lines=4,
             expand=True,
         )
         self.send_button = ft.ElevatedButton("Send", icon="send_rounded", on_click=self._on_send_message)
@@ -638,12 +641,18 @@ class ChatView:
             [
                 header,
                 ft.Divider(),
-                ft.Container(self.messages_view, bgcolor=CHAT_PANEL_BG, padding=12, border_radius=12),
+                ft.Container(
+                    content=self.messages_view,
+                    bgcolor=CHAT_PANEL_BG,
+                    padding=12,
+                    border_radius=12,
+                    height=300,
+                ),
                 self.input_field,
                 footer,
             ],
-            spacing=16,
-            expand=True,
+            spacing=12,
+            scroll=ft.ScrollMode.AUTO,
         )
 
         self._refresh_api_status()
@@ -844,37 +853,55 @@ def main(page: ft.Page) -> None:
     preposition_view = PrepositionExerciseView(page)
     chat_view = ChatView(page, ChatClient(OPENAI_API_KEY))
 
+    # Use viewport-relative heights for mobile
     practice_tabs = ft.Tabs(
         tabs=[
-            ft.Tab(text="Articles", content=ft.Container(content=article_view.view, padding=10)),
-            ft.Tab(text="Verbs", content=ft.Container(content=verb_view.view, padding=10)),
-            ft.Tab(text="Prepositions", content=ft.Container(content=preposition_view.view, padding=10)),
+            ft.Tab(text="Articles", content=ft.Container(
+                content=article_view.view,
+                padding=10,
+            )),
+            ft.Tab(text="Verbs", content=ft.Container(
+                content=verb_view.view,
+                padding=10,
+            )),
+            ft.Tab(text="Prepositions", content=ft.Container(
+                content=preposition_view.view,
+                padding=10,
+            )),
         ],
-        height=600,
         animation_duration=250,
     )
 
     main_tabs = ft.Tabs(
         tabs=[
-            ft.Tab(text="Reference", content=ft.Container(content=reference_view.view, padding=10)),
-            ft.Tab(text="Practice", content=ft.Container(content=practice_tabs, padding=10)),
-            ft.Tab(text="Chat", content=ft.Container(content=chat_view.view, padding=10)),
+            ft.Tab(text="Reference", content=ft.Container(
+                content=reference_view.view,
+                padding=10,
+            )),
+            ft.Tab(text="Practice", content=ft.Container(
+                content=practice_tabs,
+                padding=10,
+            )),
+            ft.Tab(text="Chat", content=ft.Container(
+                content=chat_view.view,
+                padding=10,
+            )),
         ],
-        height=650,
         animation_duration=250,
         scrollable=True,
     )
 
-    page.add(
-        ft.Column(
-            [
-                settings_panel,
-                main_tabs,
-            ],
-            spacing=12,
-            scroll=ft.ScrollMode.AUTO,
-        )
+    # Main content area
+    main_content = ft.Column(
+        [
+            settings_panel,
+            main_tabs,
+        ],
+        spacing=12,
+        expand=True,
     )
+    
+    page.add(main_content)
     reference_view.prime()
     page.update()
 
