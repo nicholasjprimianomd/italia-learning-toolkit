@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: italia-learning-toolkit
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python web.py
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FLET_WEB_MODE
+        value: true
+      - key: PORT
+        fromService:
+          type: web
+          name: italia-learning-toolkit
+          property: port
+
