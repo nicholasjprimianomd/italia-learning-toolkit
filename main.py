@@ -119,14 +119,13 @@ class ReferenceView:
                     ft.Column(
                         controls=self.topic_tiles,
                         spacing=2,
-                        expand=True,
+                        scroll=ft.ScrollMode.AUTO,
+                        height=300,
                     ),
                 ],
-                expand=True,
                 spacing=12,
             ),
             padding=12,
-            width=280,
             bgcolor=SIDEBAR_BG,
             border_radius=12,
         )
@@ -147,8 +146,11 @@ class ReferenceView:
             padding=20,
         )
 
-        return ft.Row(
-            controls=[sidebar, content_panel],
+        return ft.ResponsiveRow(
+            controls=[
+                ft.Column([sidebar], col={"sm": 12, "md": 4, "lg": 3}),
+                ft.Column([content_panel], col={"sm": 12, "md": 8, "lg": 9}),
+            ],
             expand=1,
         )
 
@@ -740,10 +742,11 @@ class ChatView:
 
 def main(page: ft.Page) -> None:
     page.title = "Italian Learning Toolkit"
-    page.padding = 20
-    page.scroll = ft.ScrollMode.AUTO
+    page.padding = 10  # Reduced padding for mobile
+    page.scroll = ft.ScrollMode.ADAPTIVE
     page.theme_mode = ft.ThemeMode.DARK
     page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
+    page.vertical_alignment = ft.CrossAxisAlignment.START
     
     # Only set window size for desktop apps (not web)
     import os
@@ -853,12 +856,13 @@ def main(page: ft.Page) -> None:
 
     main_tabs = ft.Tabs(
         tabs=[
-            ft.Tab(text="Reference", content=ft.Column([reference_view.view], expand=1)),
-            ft.Tab(text="Practice", content=ft.Column([practice_tabs], expand=1)),
-            ft.Tab(text="Chat", content=ft.Column([chat_view.view], expand=1)),
+            ft.Tab(text="Reference", content=ft.Container(content=reference_view.view, padding=10, expand=True)),
+            ft.Tab(text="Practice", content=ft.Container(content=practice_tabs, padding=10, expand=True)),
+            ft.Tab(text="Chat", content=ft.Container(content=chat_view.view, padding=10, expand=True)),
         ],
-        expand=1,
+        expand=True,
         animation_duration=250,
+        scrollable=True,
     )
 
     page.add(
