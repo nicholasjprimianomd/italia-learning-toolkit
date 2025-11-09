@@ -846,21 +846,21 @@ def main(page: ft.Page) -> None:
 
     practice_tabs = ft.Tabs(
         tabs=[
-            ft.Tab(text="Articles", content=ft.Column([article_view.view], expand=1)),
-            ft.Tab(text="Verbs", content=ft.Column([verb_view.view], expand=1)),
-            ft.Tab(text="Prepositions", content=ft.Column([preposition_view.view], expand=1)),
+            ft.Tab(text="Articles", content=ft.Container(content=article_view.view, padding=10)),
+            ft.Tab(text="Verbs", content=ft.Container(content=verb_view.view, padding=10)),
+            ft.Tab(text="Prepositions", content=ft.Container(content=preposition_view.view, padding=10)),
         ],
-        expand=1,
+        height=600,
         animation_duration=250,
     )
 
     main_tabs = ft.Tabs(
         tabs=[
-            ft.Tab(text="Reference", content=ft.Container(content=reference_view.view, padding=10, expand=True)),
-            ft.Tab(text="Practice", content=ft.Container(content=practice_tabs, padding=10, expand=True)),
-            ft.Tab(text="Chat", content=ft.Container(content=chat_view.view, padding=10, expand=True)),
+            ft.Tab(text="Reference", content=ft.Container(content=reference_view.view, padding=10)),
+            ft.Tab(text="Practice", content=ft.Container(content=practice_tabs, padding=10)),
+            ft.Tab(text="Chat", content=ft.Container(content=chat_view.view, padding=10)),
         ],
-        expand=True,
+        height=650,
         animation_duration=250,
         scrollable=True,
     )
@@ -871,8 +871,8 @@ def main(page: ft.Page) -> None:
                 settings_panel,
                 main_tabs,
             ],
-            expand=1,
             spacing=12,
+            scroll=ft.ScrollMode.AUTO,
         )
     )
     reference_view.prime()
