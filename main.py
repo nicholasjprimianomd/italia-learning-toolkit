@@ -756,13 +756,14 @@ def main(page: ft.Page) -> None:
             pass
 
     theme_switch = ft.Switch(label="Dark mode", value=True)
+    
+    # Settings panel (visible by default for now)
     user_id_field = ft.TextField(
         label="User ID (for cross-device sync)",
         hint_text="Enter a unique ID to sync progress across devices",
-        width=250,
-        on_submit=lambda e: page.run_task(save_user_id, e.control.value),
+        expand=True,
     )
-    sync_status = ft.Text("", size=10, color=ft.Colors.ON_SURFACE_VARIANT)
+    sync_status = ft.Text("Local mode (enter ID to sync)", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
 
     async def save_user_id(user_id: str) -> None:
         """Save user ID and reload progress."""
@@ -809,37 +810,27 @@ def main(page: ft.Page) -> None:
 
     theme_switch.on_change = toggle_theme
 
-    settings_dialog = ft.AlertDialog(
-        title=ft.Text("Sync Settings"),
-        content=ft.Column(
+    # Settings panel at the top
+    settings_panel = ft.Container(
+        content=ft.Row(
             [
-                ft.Text("Enter a User ID to sync your progress across devices:", size=12),
                 user_id_field,
+                save_user_id_btn,
                 sync_status,
-                ft.Row([save_user_id_btn], spacing=8),
             ],
-            spacing=12,
-            tight=True,
-            width=400,
+            spacing=8,
+            alignment=ft.MainAxisAlignment.CENTER,
         ),
-        actions=[
-            ft.TextButton("Close", on_click=lambda _: (setattr(settings_dialog, "open", False), page.update())),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
+        padding=10,
+        bgcolor=CARD_BG,
+        border_radius=8,
+        visible=True,
     )
-
-    def open_settings(_: ft.ControlEvent) -> None:
-        settings_dialog.open = True
-        page.dialog = settings_dialog
-        page.update()
-
-    settings_btn = ft.IconButton(icon="settings", on_click=open_settings)
 
     page.appbar = ft.AppBar(
         title=ft.Text("Italian Learning Toolkit"),
         center_title=False,
         actions=[
-            ft.Container(settings_btn, padding=ft.padding.only(right=8)),
             ft.Container(theme_switch, padding=ft.padding.only(right=16)),
         ],
     )
@@ -870,7 +861,16 @@ def main(page: ft.Page) -> None:
         animation_duration=250,
     )
 
-    page.add(ft.Column([main_tabs], expand=1))
+    page.add(
+        ft.Column(
+            [
+                settings_panel,
+                main_tabs,
+            ],
+            expand=1,
+            spacing=12,
+        )
+    )
     reference_view.prime()
     page.update()
 
