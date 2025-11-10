@@ -853,65 +853,23 @@ def main(page: ft.Page) -> None:
     preposition_view = PrepositionExerciseView(page)
     chat_view = ChatView(page, ChatClient(OPENAI_API_KEY))
 
-    # Wrap tab content with explicit heights for mobile compatibility
+    # Simplified tab structure for mobile compatibility
     practice_tabs = ft.Tabs(
         tabs=[
-            ft.Tab(
-                text="Articles",
-                content=ft.Container(
-                    content=ft.Column([article_view.view], scroll=ft.ScrollMode.AUTO),
-                    padding=10,
-                    height=550,
-                ),
-            ),
-            ft.Tab(
-                text="Verbs",
-                content=ft.Container(
-                    content=ft.Column([verb_view.view], scroll=ft.ScrollMode.AUTO),
-                    padding=10,
-                    height=550,
-                ),
-            ),
-            ft.Tab(
-                text="Prepositions",
-                content=ft.Container(
-                    content=ft.Column([preposition_view.view], scroll=ft.ScrollMode.AUTO),
-                    padding=10,
-                    height=550,
-                ),
-            ),
+            ft.Tab(text="Articles", content=article_view.view),
+            ft.Tab(text="Verbs", content=verb_view.view),
+            ft.Tab(text="Prepositions", content=preposition_view.view),
         ],
-        animation_duration=250,
+        height=550,
     )
 
     main_tabs = ft.Tabs(
         tabs=[
-            ft.Tab(
-                text="Reference",
-                content=ft.Container(
-                    content=ft.Column([reference_view.view], scroll=ft.ScrollMode.AUTO),
-                    padding=10,
-                    height=600,
-                ),
-            ),
-            ft.Tab(
-                text="Practice",
-                content=ft.Container(
-                    content=ft.Column([practice_tabs], scroll=ft.ScrollMode.AUTO),
-                    padding=10,
-                    height=600,
-                ),
-            ),
-            ft.Tab(
-                text="Chat",
-                content=ft.Container(
-                    content=ft.Column([chat_view.view], scroll=ft.ScrollMode.AUTO),
-                    padding=10,
-                    height=600,
-                ),
-            ),
+            ft.Tab(text="Reference", content=reference_view.view),
+            ft.Tab(text="Practice", content=practice_tabs),
+            ft.Tab(text="Chat", content=chat_view.view),
         ],
-        animation_duration=250,
+        height=650,
         scrollable=True,
     )
 
