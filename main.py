@@ -139,6 +139,7 @@ class ReferenceView:
                 ],
                 expand=True,
                 spacing=16,
+                scroll=ft.ScrollMode.AUTO,
             ),
             expand=True,
             bgcolor=CARD_BG,
@@ -226,6 +227,7 @@ class ArticleExerciseView:
             ],
             spacing=16,
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
         )
 
         self._load_new_question()
@@ -363,6 +365,7 @@ class VerbExerciseView:
             ],
             spacing=16,
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
         )
 
         self._load_new_question()
@@ -494,6 +497,7 @@ class PrepositionExerciseView:
             ],
             spacing=16,
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
         )
 
         self._load_new_question()
