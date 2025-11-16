@@ -117,7 +117,6 @@ class ReferenceView:
         self.reference_text = ft.Text(
             REFERENCE_SECTIONS[self.selected_index]["content"],
             selectable=True,
-            expand=True,
             size=13,
             no_wrap=False,
             color=ft.Colors.WHITE,
@@ -153,22 +152,24 @@ class ReferenceView:
                     ft.Divider(),
                     self.reference_text,
                 ],
-                expand=True,
                 spacing=16,
                 scroll=ft.ScrollMode.AUTO,
             ),
-            expand=True,
+            height=580,
             bgcolor=CARD_BG,
             border_radius=12,
             padding=20,
         )
 
-        return ft.ResponsiveRow(
-            controls=[
-                ft.Column([sidebar], col={"sm": 12, "md": 4, "lg": 3}),
-                ft.Column([content_panel], col={"sm": 12, "md": 8, "lg": 9}),
-            ],
-            expand=1,
+        return ft.Container(
+            content=ft.ResponsiveRow(
+                controls=[
+                    ft.Column([sidebar], col={"sm": 12, "md": 4, "lg": 3}),
+                    ft.Column([content_panel], col={"sm": 12, "md": 8, "lg": 9}, expand=True),
+                ],
+            ),
+            height=600,
+            expand=False,
         )
 
     def _build_tile(self, index: int, title: str) -> ft.ListTile:
