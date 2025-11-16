@@ -10,10 +10,26 @@ from config import OPENAI_API_KEY
 from data import (
     ARTICLE_OPTIONS,
     ARTICLE_QUESTIONS,
+    CLOTHING_OPTIONS,
+    CLOTHING_QUESTIONS,
+    COLOR_OPTIONS,
+    COLOR_QUESTIONS,
+    DAY_MONTH_OPTIONS,
+    DAY_MONTH_QUESTIONS,
+    GREETING_OPTIONS,
+    GREETING_QUESTIONS,
     PREPOSITION_QUESTIONS,
+    PRONUNCIATION_OPTIONS,
+    PRONUNCIATION_QUESTIONS,
+    QUESTION_WORD_OPTIONS,
+    QUESTION_WORD_QUESTIONS,
     REFERENCE_SECTIONS,
+    TIME_OPTIONS,
+    TIME_QUESTIONS,
     VERB_OPTIONS,
     VERB_QUESTIONS,
+    WEATHER_OPTIONS,
+    WEATHER_QUESTIONS,
 )
 
 SIDEBAR_BG = "#1f2530"
@@ -139,6 +155,7 @@ class ReferenceView:
                 ],
                 expand=True,
                 spacing=16,
+                scroll=ft.ScrollMode.AUTO,
             ),
             expand=True,
             bgcolor=CARD_BG,
@@ -226,6 +243,7 @@ class ArticleExerciseView:
             ],
             spacing=16,
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
         )
 
         self._load_new_question()
@@ -363,6 +381,7 @@ class VerbExerciseView:
             ],
             spacing=16,
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
         )
 
         self._load_new_question()
@@ -494,6 +513,7 @@ class PrepositionExerciseView:
             ],
             spacing=16,
             expand=True,
+            scroll=ft.ScrollMode.AUTO,
         )
 
         self._load_new_question()
@@ -541,6 +561,150 @@ class PrepositionExerciseView:
             self.feedback_text.color = ft.Colors.GREEN_400
         else:
             self.feedback_text.value = f"✘ Not quite. The correct form is '{self.current['result']}'."
+            self.feedback_text.color = ft.Colors.RED_400
+
+        self.explanation_text.value = self.current["explanation"]
+        safe_update(self.feedback_text, self.explanation_text)
+
+        self._update_score_text()
+        # Save progress
+        self.page.run_task(self._save_progress)
+
+    async def _load_progress(self) -> None:
+        """Load saved progress from storage."""
+        score, total = await load_progress(self.page, self.storage_key)
+        self.score = score
+        self.total = total
+        self._update_score_text()
+
+    async def _save_progress(self) -> None:
+        """Save current progress to storage."""
+        await save_progress(self.page, self.storage_key, self.score, self.total)
+
+    def _on_reset_progress(self, _: ft.ControlEvent) -> None:
+        """Reset progress to zero."""
+        self.score = 0
+        self.total = 0
+        self._update_score_text()
+        self.page.run_task(self._save_progress)
+        self._show_snack_bar("Progress reset!")
+
+    def _update_score_text(self) -> None:
+        if self.total == 0:
+            self.score_text.value = "Score: 0 / 0"
+        else:
+            percent = (self.score / self.total) * 100
+            self.score_text.value = f"Score: {self.score} / {self.total} ({percent:.0f}%)"
+        safe_update(self.score_text)
+
+    def _show_snack_bar(self, message: str) -> None:
+        self.page.snack_bar = ft.SnackBar(ft.Text(message))
+        self.page.snack_bar.open = True
+        self.page.update()
+
+
+class GenericExerciseView:
+    """Generic exercise view for simple question-answer format."""
+
+    def __init__(self, page: ft.Page, title: str, subtitle: str, questions: list[dict], options: list[str],
+                 storage_key: str, question_key: str = "question", answer_key: str = "correct") -> None:
+        self.page = page
+        self.questions = questions
+        self.options = options
+        self.storage_key = storage_key
+        self.question_key = question_key
+        self.answer_key = answer_key
+
+        self.current: dict[str, str] | None = None
+        self.score = 0
+        self.total = 0
+
+        # Load saved progress
+        page.run_task(self._load_progress)
+
+        self.prompt_text = ft.Text("", size=18, weight=ft.FontWeight.BOLD)
+        self.option_group = ft.RadioGroup(
+            content=ft.Column(
+                controls=[ft.Radio(value=option, label=option) for option in self.options],
+                spacing=8,
+            )
+        )
+        self.feedback_text = ft.Text("", size=14)
+        self.explanation_text = ft.Text("", size=13, color=ft.Colors.ON_SURFACE_VARIANT)
+        self.score_text = ft.Text("Score: 0 / 0", weight=ft.FontWeight.BOLD)
+
+        actions = ft.Row(
+            [
+                ft.ElevatedButton("Check answer", icon="check_circle", on_click=self._on_check_answer),
+                ft.OutlinedButton("New question", icon="refresh", on_click=self._on_new_question),
+                ft.OutlinedButton("Reset progress", icon="restart_alt", on_click=self._on_reset_progress),
+            ],
+            spacing=8,
+            wrap=True,
+        )
+
+        self.view = ft.Column(
+            [
+                ft.Text(title, size=20, weight=ft.FontWeight.BOLD),
+                ft.Text(subtitle, size=14, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Divider(),
+                self.prompt_text,
+                self.option_group,
+                actions,
+                self.feedback_text,
+                self.explanation_text,
+                ft.Divider(height=24),
+                self.score_text,
+            ],
+            spacing=16,
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
+        )
+
+        self._load_new_question()
+
+    def _load_new_question(self) -> None:
+        self.current = random.choice(self.questions)
+        # Support different keys for different question types
+        if self.question_key in self.current:
+            self.prompt_text.value = self.current[self.question_key]
+        elif "situation" in self.current:
+            self.prompt_text.value = self.current["situation"]
+        elif "meaning" in self.current:
+            self.prompt_text.value = f"What is the Italian word for: {self.current['meaning']}?"
+        elif "time" in self.current:
+            self.prompt_text.value = f"How do you say '{self.current['time']}' in Italian?"
+        elif "english" in self.current:
+            self.prompt_text.value = f"Translate to Italian: {self.current['english']}"
+        elif "noun_phrase" in self.current:
+            self.prompt_text.value = f"What is the correct color form for: {self.current['noun_phrase']}?"
+
+        self.option_group.value = None
+        self.feedback_text.value = ""
+        self.explanation_text.value = ""
+
+        safe_update(self.prompt_text, self.option_group, self.feedback_text, self.explanation_text)
+        self._update_score_text()
+
+    def _on_new_question(self, _: ft.ControlEvent) -> None:
+        self._load_new_question()
+
+    def _on_check_answer(self, _: ft.ControlEvent) -> None:
+        if not self.option_group.value:
+            self._show_snack_bar("Select an option before checking.")
+            return
+
+        assert self.current is not None
+        choice = self.option_group.value
+        correct_answer = self.current[self.answer_key]
+
+        self.total += 1
+        if choice == correct_answer:
+            self.score += 1
+            self.feedback_text.value = "✔ Correct!"
+            self.feedback_text.color = ft.Colors.GREEN_400
+        else:
+            self.feedback_text.value = f"✘ Not quite. The correct answer is '{correct_answer}'."
             self.feedback_text.color = ft.Colors.RED_400
 
         self.explanation_text.value = self.current["explanation"]
@@ -851,6 +1015,41 @@ def main(page: ft.Page) -> None:
     article_view = ArticleExerciseView(page)
     verb_view = VerbExerciseView(page)
     preposition_view = PrepositionExerciseView(page)
+
+    # New exercise views
+    pronunciation_view = GenericExerciseView(
+        page, "Pronunciation Practice", "Test your Italian pronunciation knowledge",
+        PRONUNCIATION_QUESTIONS, PRONUNCIATION_OPTIONS, "pronunciation_exercise"
+    )
+    greeting_view = GenericExerciseView(
+        page, "Greetings Practice", "Choose the right greeting for each situation",
+        GREETING_QUESTIONS, GREETING_OPTIONS, "greeting_exercise"
+    )
+    time_view = GenericExerciseView(
+        page, "Telling Time Practice", "Practice telling time in Italian",
+        TIME_QUESTIONS, TIME_OPTIONS, "time_exercise"
+    )
+    weather_view = GenericExerciseView(
+        page, "Weather Practice", "Translate weather descriptions to Italian",
+        WEATHER_QUESTIONS, WEATHER_OPTIONS, "weather_exercise"
+    )
+    color_view = GenericExerciseView(
+        page, "Color Agreement Practice", "Practice color agreement with nouns",
+        COLOR_QUESTIONS, COLOR_OPTIONS, "color_exercise"
+    )
+    clothing_view = GenericExerciseView(
+        page, "Clothing Vocabulary", "Translate clothing items to Italian",
+        CLOTHING_QUESTIONS, CLOTHING_OPTIONS, "clothing_exercise"
+    )
+    day_month_view = GenericExerciseView(
+        page, "Days & Months", "Practice days of the week and months of the year",
+        DAY_MONTH_QUESTIONS, DAY_MONTH_OPTIONS, "day_month_exercise"
+    )
+    question_word_view = GenericExerciseView(
+        page, "Question Words", "Match Italian question words to their meanings",
+        QUESTION_WORD_QUESTIONS, QUESTION_WORD_OPTIONS, "question_word_exercise"
+    )
+
     chat_view = ChatView(page, ChatClient(OPENAI_API_KEY))
 
     # Simplified tab structure for mobile compatibility
@@ -859,8 +1058,17 @@ def main(page: ft.Page) -> None:
             ft.Tab(text="Articles", content=article_view.view),
             ft.Tab(text="Verbs", content=verb_view.view),
             ft.Tab(text="Prepositions", content=preposition_view.view),
+            ft.Tab(text="Pronunciation", content=pronunciation_view.view),
+            ft.Tab(text="Greetings", content=greeting_view.view),
+            ft.Tab(text="Time", content=time_view.view),
+            ft.Tab(text="Weather", content=weather_view.view),
+            ft.Tab(text="Colors", content=color_view.view),
+            ft.Tab(text="Clothing", content=clothing_view.view),
+            ft.Tab(text="Days & Months", content=day_month_view.view),
+            ft.Tab(text="Question Words", content=question_word_view.view),
         ],
         height=550,
+        scrollable=True,
     )
 
     main_tabs = ft.Tabs(
