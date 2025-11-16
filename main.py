@@ -143,7 +143,7 @@ class ReferenceView:
             padding=12,
             bgcolor=SIDEBAR_BG,
             border_radius=12,
-            height=400,
+            height=250,
         )
 
         content_panel = ft.Container(
@@ -159,19 +159,22 @@ class ReferenceView:
             bgcolor=CARD_BG,
             border_radius=12,
             padding=20,
-            height=400,
+            height=350,
         )
 
-        return ft.Column(
-            controls=[
-                ft.ResponsiveRow(
-                    controls=[
-                        ft.Column([sidebar], col={"sm": 12, "md": 4, "lg": 3}),
-                        ft.Column([content_panel], col={"sm": 12, "md": 8, "lg": 9}),
-                    ],
-                ),
-            ],
-            scroll=ft.ScrollMode.AUTO,
+        return ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.ResponsiveRow(
+                        controls=[
+                            ft.Column([sidebar], col={"sm": 12, "md": 4, "lg": 3}),
+                            ft.Column([content_panel], col={"sm": 12, "md": 8, "lg": 9}),
+                        ],
+                    ),
+                ],
+                scroll=ft.ScrollMode.AUTO,
+            ),
+            height=620,
         )
 
     def _build_tile(self, index: int, title: str) -> ft.ListTile:
@@ -1071,7 +1074,7 @@ def main(page: ft.Page) -> None:
             ft.Tab(text="Question Words", content=question_word_view.view),
         ],
         scrollable=True,
-        expand=True,
+        height=620,
     )
 
     main_tabs = ft.Tabs(
@@ -1081,7 +1084,7 @@ def main(page: ft.Page) -> None:
             ft.Tab(text="Chat", content=chat_view.view),
         ],
         scrollable=True,
-        expand=True,
+        height=650,
     )
 
     # Main content area
@@ -1091,7 +1094,6 @@ def main(page: ft.Page) -> None:
             main_tabs,
         ],
         spacing=12,
-        scroll=ft.ScrollMode.AUTO,
         expand=True,
     )
     
