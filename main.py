@@ -129,7 +129,7 @@ class ReferenceView:
         sidebar = ft.Container(
             content=ft.Column(
                 [
-                    ft.Text("Topics", weight=ft.FontWeight.BOLD, size=18, color=ft.Colors.WHITE),
+                    ft.Text("Topics", weight=ft.FontWeight.BOLD, size=16, color=ft.Colors.WHITE),
                     ft.Divider(height=1),
                     ft.Column(
                         controls=self.topic_tiles,
@@ -137,13 +137,12 @@ class ReferenceView:
                         scroll=ft.ScrollMode.AUTO,
                     ),
                 ],
-                spacing=12,
+                spacing=8,
                 scroll=ft.ScrollMode.AUTO,
             ),
-            padding=12,
+            padding=10,
             bgcolor=SIDEBAR_BG,
-            border_radius=12,
-            height=250,
+            border_radius=8,
         )
 
         content_panel = ft.Container(
@@ -153,28 +152,22 @@ class ReferenceView:
                     ft.Divider(),
                     self.reference_text,
                 ],
-                spacing=16,
+                spacing=12,
                 scroll=ft.ScrollMode.AUTO,
+                expand=True,
             ),
             bgcolor=CARD_BG,
-            border_radius=12,
-            padding=20,
-            height=350,
+            border_radius=8,
+            padding=15,
+            expand=True,
         )
 
-        return ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.ResponsiveRow(
-                        controls=[
-                            ft.Column([sidebar], col={"sm": 12, "md": 4, "lg": 3}),
-                            ft.Column([content_panel], col={"sm": 12, "md": 8, "lg": 9}),
-                        ],
-                    ),
-                ],
-                scroll=ft.ScrollMode.AUTO,
-            ),
-            height=620,
+        return ft.ResponsiveRow(
+            controls=[
+                ft.Column([sidebar], col={"xs": 12, "sm": 12, "md": 4, "lg": 3}),
+                ft.Column([content_panel], col={"xs": 12, "sm": 12, "md": 8, "lg": 9}, expand=True),
+            ],
+            expand=True,
         )
 
     def _build_tile(self, index: int, title: str) -> ft.ListTile:
@@ -284,7 +277,9 @@ class ArticleExerciseView:
         choice = self.option_group.value
 
         self.total += 1
-        if choice == self.current["correct"]:
+        is_correct = choice == self.current["correct"]
+
+        if is_correct:
             self.score += 1
             self.feedback_text.value = "✔ Correct!"
             self.feedback_text.color = ft.Colors.GREEN_400
@@ -299,6 +294,15 @@ class ArticleExerciseView:
         self._update_score_text()
         # Save progress
         self.page.run_task(self._save_progress)
+
+        # Auto-advance to next question if correct
+        if is_correct:
+            self.page.run_task(self._auto_advance)
+
+    async def _auto_advance(self) -> None:
+        """Auto-advance to next question after a short delay."""
+        await asyncio.sleep(1.2)
+        self._load_new_question()
 
     async def _load_progress(self) -> None:
         """Load saved progress from storage."""
@@ -422,7 +426,9 @@ class VerbExerciseView:
         choice = self.option_group.value
 
         self.total += 1
-        if choice == self.current["correct"]:
+        is_correct = choice == self.current["correct"]
+
+        if is_correct:
             self.score += 1
             self.feedback_text.value = "✔ Correct!"
             self.feedback_text.color = ft.Colors.GREEN_400
@@ -436,6 +442,15 @@ class VerbExerciseView:
         self._update_score_text()
         # Save progress
         self.page.run_task(self._save_progress)
+
+        # Auto-advance to next question if correct
+        if is_correct:
+            self.page.run_task(self._auto_advance)
+
+    async def _auto_advance(self) -> None:
+        """Auto-advance to next question after a short delay."""
+        await asyncio.sleep(1.2)
+        self._load_new_question()
 
     async def _load_progress(self) -> None:
         """Load saved progress from storage."""
@@ -561,7 +576,9 @@ class PrepositionExerciseView:
         choice = self.option_group.value
 
         self.total += 1
-        if choice == self.current["result"]:
+        is_correct = choice == self.current["result"]
+
+        if is_correct:
             self.score += 1
             self.feedback_text.value = "✔ Correct!"
             self.feedback_text.color = ft.Colors.GREEN_400
@@ -575,6 +592,15 @@ class PrepositionExerciseView:
         self._update_score_text()
         # Save progress
         self.page.run_task(self._save_progress)
+
+        # Auto-advance to next question if correct
+        if is_correct:
+            self.page.run_task(self._auto_advance)
+
+    async def _auto_advance(self) -> None:
+        """Auto-advance to next question after a short delay."""
+        await asyncio.sleep(1.2)
+        self._load_new_question()
 
     async def _load_progress(self) -> None:
         """Load saved progress from storage."""
@@ -705,7 +731,9 @@ class GenericExerciseView:
         correct_answer = self.current[self.answer_key]
 
         self.total += 1
-        if choice == correct_answer:
+        is_correct = choice == correct_answer
+
+        if is_correct:
             self.score += 1
             self.feedback_text.value = "✔ Correct!"
             self.feedback_text.color = ft.Colors.GREEN_400
@@ -719,6 +747,15 @@ class GenericExerciseView:
         self._update_score_text()
         # Save progress
         self.page.run_task(self._save_progress)
+
+        # Auto-advance to next question if correct
+        if is_correct:
+            self.page.run_task(self._auto_advance)
+
+    async def _auto_advance(self) -> None:
+        """Auto-advance to next question after a short delay."""
+        await asyncio.sleep(1.2)
+        self._load_new_question()
 
     async def _load_progress(self) -> None:
         """Load saved progress from storage."""
@@ -921,7 +958,7 @@ class ChatView:
 
 def main(page: ft.Page) -> None:
     page.title = "Italian Learning Toolkit"
-    page.padding = 10  # Reduced padding for mobile
+    page.padding = 5  # Minimal padding for narrow screens
     page.scroll = ft.ScrollMode.ADAPTIVE
     page.theme_mode = ft.ThemeMode.DARK
     page.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
@@ -1000,12 +1037,12 @@ def main(page: ft.Page) -> None:
                 save_user_id_btn,
                 sync_status,
             ],
-            spacing=8,
+            spacing=6,
             alignment=ft.MainAxisAlignment.CENTER,
         ),
-        padding=10,
+        padding=8,
         bgcolor=CARD_BG,
-        border_radius=8,
+        border_radius=6,
         visible=True,
     )
 
@@ -1074,7 +1111,7 @@ def main(page: ft.Page) -> None:
             ft.Tab(text="Question Words", content=question_word_view.view),
         ],
         scrollable=True,
-        height=620,
+        expand=True,
     )
 
     main_tabs = ft.Tabs(
@@ -1084,7 +1121,7 @@ def main(page: ft.Page) -> None:
             ft.Tab(text="Chat", content=chat_view.view),
         ],
         scrollable=True,
-        height=650,
+        expand=True,
     )
 
     # Main content area
@@ -1093,7 +1130,7 @@ def main(page: ft.Page) -> None:
             settings_panel,
             main_tabs,
         ],
-        spacing=12,
+        spacing=8,
         expand=True,
     )
     
