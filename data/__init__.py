@@ -1,6 +1,7 @@
 """Data modules for the Italian learning toolkit."""
 
 from .reference_sections import REFERENCE_SECTIONS
+from .spaced_repetition import SpacedRepetitionSystem
 from .exercise_data import (
     ARTICLE_OPTIONS,
     ARTICLE_QUESTIONS,
@@ -35,6 +36,7 @@ from .exercise_data import (
 
 __all__ = [
     "REFERENCE_SECTIONS",
+    "SpacedRepetitionSystem",
     "ARTICLE_QUESTIONS",
     "ARTICLE_OPTIONS",
     "BODY_OPTIONS",

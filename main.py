@@ -32,6 +32,7 @@ from data import (
     QUESTION_WORD_OPTIONS,
     QUESTION_WORD_QUESTIONS,
     REFERENCE_SECTIONS,
+    SpacedRepetitionSystem,
     TIME_OPTIONS,
     TIME_QUESTIONS,
     VERB_OPTIONS,
@@ -907,6 +908,299 @@ class GenericExerciseView:
         self.page.update()
 
 
+class CombinedReviewView:
+    """Combined review using spaced repetition across all topics."""
+
+    # All question sets with their topic names
+    ALL_QUESTION_SETS = {
+        "Articles": ARTICLE_QUESTIONS,
+        "Body Parts": BODY_QUESTIONS,
+        "Clothing": CLOTHING_QUESTIONS,
+        "Colors": COLOR_QUESTIONS,
+        "Days & Months": DAY_MONTH_QUESTIONS,
+        "Family": FAMILY_QUESTIONS,
+        "Greetings": GREETING_QUESTIONS,
+        "Piacere & Mancare": PIACERE_QUESTIONS,
+        "Possessive Pronouns": POSSESSIVE_QUESTIONS,
+        "Prepositions": PREPOSITION_QUESTIONS,
+        "Pronunciation": PRONUNCIATION_QUESTIONS,
+        "Question Words": QUESTION_WORD_QUESTIONS,
+        "Time": TIME_QUESTIONS,
+        "Verbs": VERB_QUESTIONS,
+        "Weather": WEATHER_QUESTIONS,
+    }
+
+    def __init__(self, page: ft.Page) -> None:
+        self.page = page
+        self.srs = SpacedRepetitionSystem()
+
+        # Build question database with IDs
+        self.all_questions = []
+        self.question_map = {}  # Maps question_id to (topic, question_dict)
+
+        for topic_name, questions in self.ALL_QUESTION_SETS.items():
+            for idx, question in enumerate(questions):
+                question_id = f"{topic_name}:{idx}"
+                self.all_questions.append(question_id)
+                self.question_map[question_id] = (topic_name, question)
+
+        self.current_question_id = None
+        self.current_question = None
+        self.current_topic = None
+        self.due_questions = []
+
+        # Load SRS data
+        page.run_task(self._load_srs_data)
+
+        # UI Components
+        self.topic_label = ft.Text("", size=12, color=ft.Colors.BLUE_400, weight=ft.FontWeight.BOLD)
+        self.prompt_text = ft.Text("", size=18, weight=ft.FontWeight.BOLD)
+        self.answer_field = ft.TextField(
+            label="Your answer",
+            autofocus=True,
+            on_submit=lambda _: self._on_check_answer(None),
+        )
+        self.feedback_text = ft.Text("", size=14)
+        self.explanation_text = ft.Text("", size=13, color=ft.Colors.ON_SURFACE_VARIANT)
+
+        # Statistics
+        self.overall_stats_text = ft.Text("", size=14)
+        self.topic_stats_container = ft.Column([], spacing=4)
+        self.due_count_text = ft.Text("", size=14, color=ft.Colors.ORANGE_400)
+
+        # Actions
+        actions = ft.Row(
+            [
+                ft.ElevatedButton("Check answer", icon="check_circle", on_click=self._on_check_answer),
+                ft.OutlinedButton("Skip", icon="skip_next", on_click=self._on_skip),
+                ft.OutlinedButton("Refresh stats", icon="refresh", on_click=self._on_refresh_stats),
+            ],
+            spacing=8,
+            wrap=True,
+        )
+
+        # Stats section (collapsible)
+        self.stats_expanded = ft.ExpansionPanelList(
+            controls=[
+                ft.ExpansionPanel(
+                    header=ft.Text("Statistics", weight=ft.FontWeight.BOLD),
+                    content=ft.Container(
+                        content=ft.Column(
+                            [
+                                self.overall_stats_text,
+                                ft.Divider(height=12),
+                                ft.Text("Topic Breakdown:", weight=ft.FontWeight.BOLD, size=13),
+                                self.topic_stats_container,
+                            ],
+                            spacing=8,
+                        ),
+                        padding=10,
+                    ),
+                    can_tap_header=True,
+                )
+            ]
+        )
+
+        self.view = ft.Column(
+            [
+                ft.Text("Combined Review", size=20, weight=ft.FontWeight.BOLD),
+                ft.Text("Intelligent spaced repetition across all topics", size=14, color=ft.Colors.ON_SURFACE_VARIANT),
+                self.due_count_text,
+                ft.Divider(),
+                self.topic_label,
+                self.prompt_text,
+                self.answer_field,
+                actions,
+                self.feedback_text,
+                self.explanation_text,
+                ft.Divider(height=24),
+                self.stats_expanded,
+            ],
+            spacing=16,
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
+        )
+
+        # Load first question after data is loaded
+        page.run_task(self._initialize_review)
+
+    async def _initialize_review(self) -> None:
+        """Initialize the review session after SRS data is loaded."""
+        await asyncio.sleep(0.1)  # Wait for SRS data to load
+        self._load_next_due_question()
+        self._update_stats()
+
+    def _load_next_due_question(self) -> None:
+        """Load the next question that is due for review."""
+        # Get due questions
+        self.due_questions = self.srs.get_due_questions(self.all_questions, limit=50)
+
+        if not self.due_questions:
+            self.prompt_text.value = "No questions due for review! Check back later."
+            self.answer_field.visible = False
+            self.topic_label.value = ""
+            safe_update(self.prompt_text, self.answer_field, self.topic_label)
+            return
+
+        # Get the most urgent question
+        self.current_question_id = self.due_questions[0]
+        self.current_topic, self.current_question = self.question_map[self.current_question_id]
+
+        # Update UI
+        self.topic_label.value = f"Topic: {self.current_topic}"
+        self._format_question_prompt()
+        self.answer_field.value = ""
+        self.answer_field.visible = True
+        self.feedback_text.value = ""
+        self.explanation_text.value = ""
+
+        # Update due count
+        due_count = sum(1 for qid in self.due_questions if
+                       self.srs.get_question_record(qid)["next_review"] <=
+                       self.srs.records.get(qid, {}).get("next_review", "9999"))
+        self.due_count_text.value = f"📚 {len(self.due_questions)} questions in queue ({due_count} due now)"
+
+        safe_update(self.topic_label, self.prompt_text, self.answer_field,
+                   self.feedback_text, self.explanation_text, self.due_count_text)
+
+    def _format_question_prompt(self) -> None:
+        """Format the question prompt based on question type."""
+        q = self.current_question
+
+        if "question" in q:
+            self.prompt_text.value = q["question"]
+        elif "situation" in q:
+            self.prompt_text.value = q["situation"]
+        elif "meaning" in q:
+            self.prompt_text.value = f"What is the Italian word for: {q['meaning']}?"
+        elif "time" in q:
+            self.prompt_text.value = f"How do you say '{q['time']}' in Italian?"
+        elif "english" in q:
+            self.prompt_text.value = f"Translate to Italian: {q['english']}"
+        elif "noun_phrase" in q:
+            self.prompt_text.value = f"What is the correct color form for: {q['noun_phrase']}?"
+        else:
+            self.prompt_text.value = str(q)
+
+    def _get_correct_answer(self) -> str:
+        """Get the correct answer from the current question."""
+        q = self.current_question
+        if "correct" in q:
+            return q["correct"]
+        elif "answer" in q:
+            return q["answer"]
+        elif "response" in q:
+            return q["response"]
+        return ""
+
+    def _on_check_answer(self, _: ft.ControlEvent | None) -> None:
+        """Check the user's answer and update SRS."""
+        if not self.answer_field.value or not self.answer_field.value.strip():
+            self._show_snack_bar("Please enter an answer.")
+            return
+
+        user_answer = self.answer_field.value.strip().lower()
+        correct_answer = self._get_correct_answer().lower()
+
+        # Check if answer is correct (case-insensitive, strip whitespace)
+        is_correct = user_answer == correct_answer
+
+        # Update SRS
+        self.srs.record_answer(self.current_question_id, is_correct)
+
+        # Show feedback
+        if is_correct:
+            self.feedback_text.value = "✔ Correct!"
+            self.feedback_text.color = ft.Colors.GREEN_400
+        else:
+            self.feedback_text.value = f"✘ Not quite. The correct answer is '{self._get_correct_answer()}'."
+            self.feedback_text.color = ft.Colors.RED_400
+
+        # Show explanation if available
+        if "explanation" in self.current_question:
+            self.explanation_text.value = self.current_question["explanation"]
+
+        safe_update(self.feedback_text, self.explanation_text)
+
+        # Save SRS data
+        self.page.run_task(self._save_srs_data)
+
+        # Update statistics
+        self._update_stats()
+
+        # Auto-advance if correct
+        if is_correct:
+            self.page.run_task(self._auto_advance)
+
+    async def _auto_advance(self) -> None:
+        """Auto-advance to next question after a short delay."""
+        await asyncio.sleep(1.2)
+        self._load_next_due_question()
+
+    def _on_skip(self, _: ft.ControlEvent) -> None:
+        """Skip to the next question without recording an answer."""
+        self._load_next_due_question()
+
+    def _on_refresh_stats(self, _: ft.ControlEvent) -> None:
+        """Refresh the statistics display."""
+        self._update_stats()
+        self._show_snack_bar("Statistics refreshed!")
+
+    def _update_stats(self) -> None:
+        """Update the statistics display."""
+        stats = self.srs.get_stats()
+
+        # Overall stats
+        self.overall_stats_text.value = (
+            f"📊 Total Reviews: {stats['total_reviews']}\n"
+            f"✅ Correct: {stats['total_correct']}\n"
+            f"❌ Incorrect: {stats['total_incorrect']}\n"
+            f"🎯 Accuracy: {stats['accuracy']:.1f}%\n"
+            f"🔥 Current Streak: {stats['streak']}\n"
+            f"🏆 Best Streak: {stats['best_streak']}"
+        )
+
+        # Topic stats
+        topic_stats = self.srs.get_topic_stats()
+        self.topic_stats_container.controls.clear()
+
+        for topic, tstats in sorted(topic_stats.items()):
+            if tstats["total"] > 0:
+                stat_text = ft.Text(
+                    f"{topic}: {tstats['correct']}/{tstats['total']} ({tstats['accuracy']:.0f}%)",
+                    size=12,
+                )
+                self.topic_stats_container.controls.append(stat_text)
+
+        safe_update(self.overall_stats_text, self.topic_stats_container)
+
+    async def _load_srs_data(self) -> None:
+        """Load SRS data from client storage."""
+        try:
+            data_str = await self.page.client_storage.get_async("srs_data")
+            if data_str:
+                import json
+                data = json.loads(data_str)
+                self.srs.from_dict(data)
+        except Exception as e:
+            print(f"Error loading SRS data: {e}")
+
+    async def _save_srs_data(self) -> None:
+        """Save SRS data to client storage."""
+        try:
+            import json
+            data = self.srs.to_dict()
+            data_str = json.dumps(data)
+            await self.page.client_storage.set_async("srs_data", data_str)
+        except Exception as e:
+            print(f"Error saving SRS data: {e}")
+
+    def _show_snack_bar(self, message: str) -> None:
+        self.page.snack_bar = ft.SnackBar(ft.Text(message))
+        self.page.snack_bar.open = True
+        self.page.update()
+
+
 def main(page: ft.Page) -> None:
     page.title = "Italian Learning Toolkit"
     page.padding = 5  # Minimal padding for narrow screens
@@ -1060,6 +1354,9 @@ def main(page: ft.Page) -> None:
         BODY_QUESTIONS, BODY_OPTIONS, "body_exercise"
     )
 
+    # Combined review with spaced repetition
+    combined_review_view = CombinedReviewView(page)
+
     # Simplified tab structure for mobile compatibility
     practice_tabs = ft.Tabs(
         tabs=[
@@ -1087,6 +1384,7 @@ def main(page: ft.Page) -> None:
         tabs=[
             ft.Tab(text="Reference", content=reference_view.view),
             ft.Tab(text="Practice", content=practice_tabs),
+            ft.Tab(text="Combined Review", content=combined_review_view.view),
         ],
         scrollable=True,
         expand=True,
