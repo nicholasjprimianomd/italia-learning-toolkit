@@ -800,3 +800,228 @@ QUESTION_WORD_QUESTIONS = [
 
 QUESTION_WORD_OPTIONS = ["Cosa", "Che", "Quale", "Perché", "Come", "Dove", "Quando", "Quanto", "Quanti", "Chi"]
 
+POSSESSIVE_QUESTIONS = [
+    {
+        "english": "my car (la macchina)",
+        "correct": "la mia macchina",
+        "explanation": "Feminine singular → la mia",
+    },
+    {
+        "english": "my mother",
+        "correct": "mia madre",
+        "explanation": "Family members often drop the article → mia madre",
+    },
+    {
+        "english": "my boyfriend",
+        "correct": "il mio ragazzo",
+        "explanation": "Masculine singular → il mio",
+    },
+    {
+        "english": "your house (la casa)",
+        "correct": "la tua casa",
+        "explanation": "Feminine singular → la tua",
+    },
+    {
+        "english": "his friends (gli amici)",
+        "correct": "i suoi amici",
+        "explanation": "Masculine plural → i suoi",
+    },
+    {
+        "english": "her sister",
+        "correct": "sua sorella",
+        "explanation": "Family members drop the article → sua sorella",
+    },
+    {
+        "english": "our parents (i genitori)",
+        "correct": "i nostri genitori",
+        "explanation": "Masculine plural → i nostri",
+    },
+    {
+        "english": "your (plural) children (i figli)",
+        "correct": "i vostri figli",
+        "explanation": "Masculine plural → i vostri",
+    },
+    {
+        "english": "their house (la casa)",
+        "correct": "la loro casa",
+        "explanation": "Loro never changes → la loro casa",
+    },
+]
+
+POSSESSIVE_OPTIONS = ["il mio", "la mia", "i miei", "le mie", "il tuo", "la tua", "i tuoi", "le tue", "il suo", "la sua", "i suoi", "le sue", "il nostro", "la nostra", "i nostri", "le nostre", "il vostro", "la vostra", "i vostri", "le vostre", "il loro", "la loro", "i loro", "le loro", "mio", "mia", "tuo", "tua", "suo", "sua", "la mia macchina", "mia madre", "il mio ragazzo", "la tua casa", "i suoi amici", "sua sorella", "i nostri genitori", "i vostri figli", "la loro casa"]
+
+FAMILY_QUESTIONS = [
+    {
+        "english": "mother",
+        "correct": "madre",
+        "explanation": "Madre → mother",
+    },
+    {
+        "english": "father",
+        "correct": "padre",
+        "explanation": "Padre → father",
+    },
+    {
+        "english": "brother",
+        "correct": "fratello",
+        "explanation": "Fratello → brother",
+    },
+    {
+        "english": "sister",
+        "correct": "sorella",
+        "explanation": "Sorella → sister",
+    },
+    {
+        "english": "grandfather",
+        "correct": "nonno",
+        "explanation": "Nonno → grandfather",
+    },
+    {
+        "english": "grandmother",
+        "correct": "nonna",
+        "explanation": "Nonna → grandmother",
+    },
+    {
+        "english": "uncle",
+        "correct": "zio",
+        "explanation": "Zio → uncle",
+    },
+    {
+        "english": "aunt",
+        "correct": "zia",
+        "explanation": "Zia → aunt",
+    },
+    {
+        "english": "son",
+        "correct": "figlio",
+        "explanation": "Figlio → son",
+    },
+    {
+        "english": "daughter",
+        "correct": "figlia",
+        "explanation": "Figlia → daughter",
+    },
+    {
+        "english": "parents",
+        "correct": "genitori",
+        "explanation": "Genitori → parents",
+    },
+    {
+        "english": "relatives",
+        "correct": "parenti",
+        "explanation": "Parenti → relatives",
+    },
+]
+
+FAMILY_OPTIONS = ["madre", "mamma", "padre", "papà", "fratello", "sorella", "zio", "zia", "nonno", "nonna", "nonni", "cugino", "cugina", "nipote", "figlio", "figlia", "genitori", "parenti", "famiglia"]
+
+PIACERE_QUESTIONS = [
+    {
+        "english": "I like pizza",
+        "correct": "mi piace la pizza",
+        "explanation": "Mi piace (singular) → I like pizza",
+    },
+    {
+        "english": "I like spaghetti",
+        "correct": "mi piacciono gli spaghetti",
+        "explanation": "Mi piacciono (plural) → I like spaghetti",
+    },
+    {
+        "english": "you like it",
+        "correct": "ti piace",
+        "explanation": "Ti piace → you like it",
+    },
+    {
+        "english": "he likes it",
+        "correct": "gli piace",
+        "explanation": "Gli piace → he likes it",
+    },
+    {
+        "english": "she likes it",
+        "correct": "le piace",
+        "explanation": "Le piace → she likes it",
+    },
+    {
+        "english": "we like them",
+        "correct": "ci piacciono",
+        "explanation": "Ci piacciono (plural) → we like them",
+    },
+    {
+        "english": "I miss you",
+        "correct": "mi manchi",
+        "explanation": "Mi manchi → I miss you (you are the subject)",
+    },
+    {
+        "english": "you miss it",
+        "correct": "ti manca",
+        "explanation": "Ti manca → you miss it",
+    },
+]
+
+PIACERE_OPTIONS = ["mi piace", "mi piacciono", "ti piace", "ti piacciono", "gli piace", "le piace", "ci piace", "ci piacciono", "vi piace", "vi piacciono", "mi manca", "mi manchi", "ti manca", "gli manca", "le manca", "ci manca", "mi piace la pizza", "mi piacciono gli spaghetti"]
+
+BODY_QUESTIONS = [
+    {
+        "english": "head",
+        "correct": "testa",
+        "explanation": "La testa → head",
+    },
+    {
+        "english": "eyes",
+        "correct": "occhi",
+        "explanation": "Gli occhi → eyes",
+    },
+    {
+        "english": "nose",
+        "correct": "naso",
+        "explanation": "Il naso → nose",
+    },
+    {
+        "english": "mouth",
+        "correct": "bocca",
+        "explanation": "La bocca → mouth",
+    },
+    {
+        "english": "ears",
+        "correct": "orecchie",
+        "explanation": "Le orecchie → ears",
+    },
+    {
+        "english": "hands",
+        "correct": "mani",
+        "explanation": "Le mani → hands",
+    },
+    {
+        "english": "feet",
+        "correct": "piedi",
+        "explanation": "I piedi → feet",
+    },
+    {
+        "english": "legs",
+        "correct": "gambe",
+        "explanation": "Le gambe → legs",
+    },
+    {
+        "english": "arms",
+        "correct": "braccia",
+        "explanation": "Le braccia → arms",
+    },
+    {
+        "english": "stomach/belly",
+        "correct": "pancia",
+        "explanation": "La pancia → stomach/belly",
+    },
+    {
+        "english": "back",
+        "correct": "schiena",
+        "explanation": "La schiena → back",
+    },
+    {
+        "english": "my head hurts",
+        "correct": "mi fa male la testa",
+        "explanation": "Mi fa male (singular) → my head hurts",
+    },
+]
+
+BODY_OPTIONS = ["testa", "occhi", "occhio", "naso", "bocca", "orecchie", "mani", "mano", "piedi", "piede", "gambe", "gamba", "braccia", "braccio", "pancia", "schiena", "capelli", "denti", "collo", "mi fa male la testa", "mi fanno male i denti"]
+

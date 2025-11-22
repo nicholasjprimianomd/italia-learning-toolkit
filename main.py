@@ -10,14 +10,22 @@ from config import OPENAI_API_KEY
 from data import (
     ARTICLE_OPTIONS,
     ARTICLE_QUESTIONS,
+    BODY_OPTIONS,
+    BODY_QUESTIONS,
     CLOTHING_OPTIONS,
     CLOTHING_QUESTIONS,
     COLOR_OPTIONS,
     COLOR_QUESTIONS,
     DAY_MONTH_OPTIONS,
     DAY_MONTH_QUESTIONS,
+    FAMILY_OPTIONS,
+    FAMILY_QUESTIONS,
     GREETING_OPTIONS,
     GREETING_QUESTIONS,
+    PIACERE_OPTIONS,
+    PIACERE_QUESTIONS,
+    POSSESSIVE_OPTIONS,
+    POSSESSIVE_QUESTIONS,
     PREPOSITION_QUESTIONS,
     PRONUNCIATION_OPTIONS,
     PRONUNCIATION_QUESTIONS,
@@ -104,8 +112,9 @@ async def save_progress(page: ft.Page, key: str, score: int, total: int) -> None
 
 
 class ReferenceView:
-    def __init__(self, page: ft.Page) -> None:
+    def __init__(self, page: ft.Page, chat_client: ChatClient) -> None:
         self.page = page
+        self.chat_client = chat_client
         self.selected_index = 0
         self.topic_tiles: list[ft.ListTile] = []
         self.title_text = ft.Text(
@@ -120,6 +129,13 @@ class ReferenceView:
             size=13,
             no_wrap=False,
             color=ft.Colors.WHITE,
+        )
+        self.explanation_text = ft.Text("", size=12, color=ft.Colors.BLUE_200, italic=True)
+        self.explain_button = ft.ElevatedButton(
+            "Explain selected text",
+            icon="lightbulb",
+            on_click=self._on_explain_selection,
+            visible=False,
         )
         self.view = self._build()
 
@@ -150,7 +166,18 @@ class ReferenceView:
                 [
                     self.title_text,
                     ft.Divider(),
+                    ft.TextField(
+                        value="",
+                        hint_text="Select text in the reference below, then click 'Explain'",
+                        multiline=True,
+                        min_lines=1,
+                        max_lines=2,
+                        on_change=self._on_selection_change,
+                        read_only=False,
+                    ) if False else ft.Container(),  # Hidden selection input
                     self.reference_text,
+                    self.explain_button,
+                    self.explanation_text,
                 ],
                 spacing=12,
                 scroll=ft.ScrollMode.AUTO,
@@ -161,6 +188,10 @@ class ReferenceView:
             padding=15,
             expand=True,
         )
+
+        # Add text selection listener
+        self.reference_text.on_focus = self._on_text_focus
+        self.reference_text.on_blur = self._on_text_blur
 
         return ft.ResponsiveRow(
             controls=[
@@ -190,6 +221,92 @@ class ReferenceView:
 
     def prime(self) -> None:
         safe_update(self.title_text, self.reference_text, *self.topic_tiles)
+
+    def _on_text_focus(self, e: ft.ControlEvent) -> None:
+        """Show explain button when text is focused."""
+        self.explain_button.visible = True
+        safe_update(self.explain_button)
+
+    def _on_text_blur(self, e: ft.ControlEvent) -> None:
+        """Keep button visible even when focus is lost."""
+        pass
+
+    def _on_selection_change(self, e: ft.ControlEvent) -> None:
+        """Handle text selection changes."""
+        pass
+
+    def _on_explain_selection(self, e: ft.ControlEvent) -> None:
+        """Get ChatGPT explanation for selected text."""
+        # Since Flet doesn't support getting selected text directly,
+        # we'll use a dialog to let users paste the text they want explained
+        self.selected_text_field = ft.TextField(
+            multiline=True,
+            min_lines=2,
+            max_lines=5,
+            autofocus=True,
+        )
+        self.page.dialog = ft.AlertDialog(
+            title=ft.Text("Explain Italian Text"),
+            content=ft.Column(
+                [
+                    ft.Text("Paste or type the Italian text you want explained:"),
+                    self.selected_text_field,
+                ],
+                tight=True,
+            ),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda _: self._close_dialog()),
+                ft.ElevatedButton("Explain", on_click=lambda _: self.page.run_task(self._explain_text)),
+            ],
+        )
+        self.page.dialog.open = True
+        self.page.update()
+
+    def _close_dialog(self) -> None:
+        """Close the dialog."""
+        if self.page.dialog:
+            self.page.dialog.open = False
+            self.page.update()
+
+    async def _explain_text(self) -> None:
+        """Get explanation from ChatGPT."""
+        selected_text = self.selected_text_field.value.strip()
+        if not selected_text:
+            self.explanation_text.value = "Please enter some text to explain."
+            safe_update(self.explanation_text)
+            return
+
+        self._close_dialog()
+
+        # Show loading state
+        self.explanation_text.value = "Getting explanation from ChatGPT..."
+        self.explanation_text.color = ft.Colors.BLUE_200
+        safe_update(self.explanation_text)
+
+        try:
+            # Call ChatGPT to explain the text
+            messages = [
+                ChatMessage(
+                    role="system",
+                    content="You are an Italian language tutor. Provide concise explanations of Italian words, phrases, or grammar concepts. Focus on meaning, usage, and any important grammatical notes."
+                ),
+                ChatMessage(
+                    role="user",
+                    content=f"Explain this Italian text or concept: {selected_text}"
+                )
+            ]
+
+            response = await self.chat_client.chat(messages, model="gpt-4o-mini")
+            self.explanation_text.value = f"💡 {response}"
+            self.explanation_text.color = ft.Colors.GREEN_200
+        except ChatClientError as error:
+            self.explanation_text.value = f"Error: {error}"
+            self.explanation_text.color = ft.Colors.RED_400
+        except Exception as error:
+            self.explanation_text.value = f"Unexpected error: {error}"
+            self.explanation_text.color = ft.Colors.RED_400
+
+        safe_update(self.explanation_text)
 
 
 class ArticleExerciseView:
@@ -790,172 +907,6 @@ class GenericExerciseView:
         self.page.update()
 
 
-class ChatView:
-    MODELS = ["gpt-4o-mini", "gpt-4o"]
-
-    def __init__(self, page: ft.Page, chat_client: ChatClient) -> None:
-        self.page = page
-        self.client = chat_client
-        self.messages: list[ChatMessage] = [
-            ChatMessage(
-                role="system",
-                content=(
-                    "You are a friendly Italian tutor. Provide concise explanations and examples that reinforce Italian "
-                    "vocabulary and grammar concepts."
-                ),
-            )
-        ]
-
-        self.model_dropdown = ft.Dropdown(
-            label="Model",
-            options=[ft.dropdown.Option(model) for model in self.MODELS],
-            value=self.client.default_model if self.client.default_model in self.MODELS else self.MODELS[0],
-            width=220,
-        )
-        self.status_text = ft.Text("", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
-        self.messages_view = ft.ListView(spacing=10, auto_scroll=True, height=300)
-        self.input_field = ft.TextField(
-            label="Ask a question or describe what you are practising...",
-            multiline=True,
-            min_lines=2,
-            max_lines=4,
-            expand=True,
-        )
-        self.send_button = ft.ElevatedButton("Send", icon="send_rounded", on_click=self._on_send_message)
-        clear_button = ft.OutlinedButton(
-            "Clear conversation",
-            icon="clear_all_rounded",
-            on_click=self._on_clear_conversation,
-        )
-
-        header = ft.Row(
-            [
-                ft.Column(
-                    [
-                        ft.Text("Chat with ChatGPT", size=20, weight=ft.FontWeight.BOLD),
-                        self.status_text,
-                    ],
-                    expand=True,
-                ),
-                self.model_dropdown,
-            ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-        )
-
-        footer = ft.Row([self.send_button, clear_button], spacing=12)
-
-        self.view = ft.Column(
-            [
-                header,
-                ft.Divider(),
-                ft.Container(
-                    content=self.messages_view,
-                    bgcolor=CHAT_PANEL_BG,
-                    padding=12,
-                    border_radius=12,
-                    height=300,
-                ),
-                self.input_field,
-                footer,
-            ],
-            spacing=12,
-            scroll=ft.ScrollMode.AUTO,
-        )
-
-        self._refresh_api_status()
-
-    def _refresh_api_status(self) -> None:
-        if self.client.api_key:
-            self.status_text.value = "API key loaded."
-            self.status_text.color = ft.Colors.GREEN_400
-        else:
-            self.status_text.value = (
-                "No API key detected. Set OPENAI_API_KEY in your environment or config.py to enable chatting."
-            )
-            self.status_text.color = ft.Colors.RED_400
-        safe_update(self.status_text)
-
-    def _append_message(self, speaker: str, message: str, is_user: bool) -> None:
-        bubble_color = ft.Colors.BLUE_100 if is_user else ASSISTANT_BUBBLE_BG
-        alignment = ft.alignment.center_right if is_user else ft.alignment.center_left
-        text_align = ft.TextAlign.RIGHT if is_user else ft.TextAlign.LEFT
-
-        bubble = ft.Container(
-            content=ft.Column(
-                [
-                    ft.Text(speaker, size=12, color=ft.Colors.ON_SURFACE_VARIANT, text_align=text_align),
-                    ft.Text(message, selectable=True, size=14, text_align=text_align),
-                ],
-                tight=True,
-                spacing=2,
-            ),
-            bgcolor=bubble_color,
-            padding=12,
-            border_radius=12,
-            alignment=alignment,
-        )
-        self.messages_view.controls.append(bubble)
-        safe_update(self.messages_view)
-
-    def _on_send_message(self, _: ft.ControlEvent) -> None:
-        content = (self.input_field.value or "").strip()
-        if not content:
-            self._show_snack_bar("Write something before sending.")
-            return
-
-        user_message = ChatMessage(role="user", content=content)
-        self.messages.append(user_message)
-        self._append_message("You", content, is_user=True)
-
-        self.input_field.value = ""
-        safe_update(self.input_field)
-
-        self.send_button.disabled = True
-        safe_update(self.send_button)
-        self._set_status("Contacting ChatGPT...", ft.Colors.ON_SURFACE_VARIANT)
-
-        self.page.run_task(self._fetch_reply())
-
-    async def _fetch_reply(self) -> None:
-        try:
-            reply = await asyncio.to_thread(
-                self.client.send_chat,
-                self.messages,
-                model=self.model_dropdown.value,
-            )
-        except ChatClientError as exc:
-            self.messages.pop()
-            self._set_status(str(exc), ft.Colors.RED_400)
-            self._show_snack_bar(str(exc))
-            self.send_button.disabled = False
-            safe_update(self.send_button)
-            return
-
-        assistant_message = ChatMessage(role="assistant", content=reply)
-        self.messages.append(assistant_message)
-        self._append_message("ChatGPT", reply, is_user=False)
-        self._set_status("Reply received.", ft.Colors.GREEN_400)
-
-        self.send_button.disabled = False
-        safe_update(self.send_button)
-
-    def _on_clear_conversation(self, _: ft.ControlEvent) -> None:
-        self.messages = self.messages[:1]
-        self.messages_view.controls.clear()
-        safe_update(self.messages_view)
-        self._set_status("Conversation cleared.", ft.Colors.ON_SURFACE_VARIANT)
-
-    def _set_status(self, message: str, color: str) -> None:
-        self.status_text.value = message
-        self.status_text.color = color
-        safe_update(self.status_text)
-
-    def _show_snack_bar(self, message: str) -> None:
-        self.page.snack_bar = ft.SnackBar(ft.Text(message))
-        self.page.snack_bar.open = True
-        self.page.update()
-
-
 def main(page: ft.Page) -> None:
     page.title = "Italian Learning Toolkit"
     page.padding = 5  # Minimal padding for narrow screens
@@ -1054,7 +1005,7 @@ def main(page: ft.Page) -> None:
         ],
     )
 
-    reference_view = ReferenceView(page)
+    reference_view = ReferenceView(page, ChatClient(OPENAI_API_KEY))
     article_view = ArticleExerciseView(page)
     verb_view = VerbExerciseView(page)
     preposition_view = PrepositionExerciseView(page)
@@ -1092,8 +1043,22 @@ def main(page: ft.Page) -> None:
         page, "Question Words", "Match Italian question words to their meanings",
         QUESTION_WORD_QUESTIONS, QUESTION_WORD_OPTIONS, "question_word_exercise"
     )
-
-    chat_view = ChatView(page, ChatClient(OPENAI_API_KEY))
+    possessive_view = GenericExerciseView(
+        page, "Possessive Pronouns", "Practice Italian possessive pronouns",
+        POSSESSIVE_QUESTIONS, POSSESSIVE_OPTIONS, "possessive_exercise"
+    )
+    family_view = GenericExerciseView(
+        page, "Family Vocabulary", "Learn Italian family member names",
+        FAMILY_QUESTIONS, FAMILY_OPTIONS, "family_exercise"
+    )
+    piacere_view = GenericExerciseView(
+        page, "Piacere & Mancare", "Practice 'like' and 'miss' verb forms",
+        PIACERE_QUESTIONS, PIACERE_OPTIONS, "piacere_exercise"
+    )
+    body_view = GenericExerciseView(
+        page, "Body Parts", "Learn Italian body part vocabulary",
+        BODY_QUESTIONS, BODY_OPTIONS, "body_exercise"
+    )
 
     # Simplified tab structure for mobile compatibility
     practice_tabs = ft.Tabs(
@@ -1109,6 +1074,10 @@ def main(page: ft.Page) -> None:
             ft.Tab(text="Clothing", content=clothing_view.view),
             ft.Tab(text="Days & Months", content=day_month_view.view),
             ft.Tab(text="Question Words", content=question_word_view.view),
+            ft.Tab(text="Possessive", content=possessive_view.view),
+            ft.Tab(text="Family", content=family_view.view),
+            ft.Tab(text="Piacere/Mancare", content=piacere_view.view),
+            ft.Tab(text="Body Parts", content=body_view.view),
         ],
         scrollable=True,
         expand=True,
@@ -1118,7 +1087,6 @@ def main(page: ft.Page) -> None:
         tabs=[
             ft.Tab(text="Reference", content=reference_view.view),
             ft.Tab(text="Practice", content=practice_tabs),
-            ft.Tab(text="Chat", content=chat_view.view),
         ],
         scrollable=True,
         expand=True,
