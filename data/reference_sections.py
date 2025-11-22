@@ -316,5 +316,167 @@ REFERENCE_SECTIONS = [
             """
         ).strip(),
     },
+    {
+        "title": "Possessive Pronouns",
+        "content": dedent(
+            """
+            In order: M singular / F singular / M plural / F plural
+
+            My
+            - il mio / la mia / i miei / le mie
+
+            Your
+            - il tuo / la tua / i tuoi / le tue
+
+            His/Her
+            - il suo / la sua / i suoi / le sue
+
+            Our
+            - il nostro / la nostra / i nostri / le nostre
+
+            Your (plural)
+            - il vostro / la vostra / i vostri / le vostre
+
+            Their
+            - il loro / la loro / i loro / le loro
+
+            Examples
+            - my car → la mia macchina
+            - my mother → mia madre
+            - my girlfriend → la mia ragazza
+            - my wife → mia moglie
+            - my boyfriend → il mio ragazzo
+            - my husband → mio marito
+            - my red car → la mia macchina rossa
+
+            Note: With family members (madre, padre, moglie, marito), the article is often dropped.
+            """
+        ).strip(),
+    },
+    {
+        "title": "Family (Famiglia)",
+        "content": dedent(
+            """
+            - famiglia: family
+            - madre: mother
+            - mamma: mom
+            - padre: father
+            - papà / babbo: dad
+            - fratello: brother
+            - sorella: sister
+            - zio: uncle
+            - zia: aunt
+            - nonno: grandfather
+            - nonna: grandmother
+            - nonni: grandparents
+            - nonne: grandmothers
+            - cugino / cugina: cousin (M/F)
+            - nipote: nephew / niece / grandson / granddaughter
+            - figlio: son
+            - figlia: daughter
+            - genitori: parents
+            - parenti: relatives
+            """
+        ).strip(),
+    },
+    {
+        "title": "Piacere (Like) & Mancare (Miss)",
+        "content": dedent(
+            """
+            These verbs use passive construction - the thing you like is the subject.
+
+            Indirect object pronouns
+            - mi: to me
+            - ti: to you
+            - gli: to him
+            - le: to her
+            - ci: to us
+            - vi: to you all
+            - gli: to them
+
+            Piacere (to like)
+            - I like it → mi piace
+            - you like it → ti piace
+            - he likes it → gli piace
+            - she likes it → le piace
+            - we like it → ci piace
+            - y'all like it → vi piace
+            - they like it → gli piace
+
+            Use piace (singular) or piacciono (plural)
+            - mi piace la pizza → I like pizza
+            - mi piacciono gli spaghetti → I like spaghetti
+            - ti piacciono gli spaghetti? → do you like spaghetti?
+
+            More examples
+            - I like them → mi piacciono
+            - I like you → mi piaci
+            - you like it → ti piace
+            - we like them → ci piacciono
+            - I like you guys → mi piacete
+            - you all like us → vi piacciamo
+
+            Mancare (to miss) - works the same way
+            - mi manca → I miss it
+            - ti manca → you miss it
+            - gli manca → he misses it
+            - le manca → she misses it
+            - ci manca → we miss it
+            - vi manca → you all miss it
+            - gli manca → they miss it
+            """
+        ).strip(),
+    },
+    {
+        "title": "Body Parts (Parti del Corpo)",
+        "content": dedent(
+            """
+            Emergency numbers
+            - 112: emergency
+            - 118: ambulance
+            - 113: police
+            - 115: fire department
+
+            Head & Face
+            - la testa: head
+            - i capelli: hair (on head)
+            - gli occhi / l'occhio: eyes / eye
+            - il naso: nose
+            - la bocca: mouth
+            - le orecchie / l'orecchio: ears / ear
+            - il mento: chin
+            - le guance / la guancia: cheeks / cheek
+            - le ciglia: eyelashes
+            - le sopracciglia: eyebrows
+            - il collo: neck
+            - le labbra / il labbro: lips / lip
+            - i denti / il dente: teeth / tooth
+            - la lingua: tongue / language
+
+            Body
+            - le spalle / la spalla: shoulders / shoulder
+            - il petto: chest
+            - la pancia: belly
+            - le braccia / il braccio: arms / arm
+            - le mani / la mano: hands / hand
+            - le dita / il dito: fingers / finger
+            - le gambe / la gamba: legs / leg
+            - i piedi / il piede: feet / foot
+            - le dita dei piedi: toes
+            - le ginocchia / il ginocchio: knees / knee
+            - i gomiti / il gomito: elbows / elbow
+            - l'ombelico: belly button
+            - la schiena: back
+            - la pelle: skin / leather
+            - i peli: body hair
+
+            Pain expressions
+            - mi fa male X (singular): my X hurts
+            - mi fanno male X (plural): my X hurts
+            - mi fa male la testa: my head hurts
+            - mi fanno male i denti: my teeth hurt
+            """
+        ).strip(),
+    },
 ]
 
